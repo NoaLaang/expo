@@ -4,10 +4,9 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Resolve the Expo CLI from the monorepo
 const EXPO_CLI_BIN = require.resolve('@expo/cli/build/bin/cli');
 
-// Define known scenario configurations (these override defaults)
+// Define known scenario configurations (these should probably live next to each scenario)
 const knownConfigs = {
   '01-rsc': {
     env: {
@@ -89,21 +88,6 @@ const knownConfigs = {
       NODE_ENV: 'production',
       EXPO_USE_STATIC: 'server',
       E2E_ROUTER_SRC: 'static-redirects',
-      E2E_ROUTER_ASYNC: 'development',
-      EXPO_USE_FAST_RESOLVER: 'true',
-      E2E_ROUTER_REDIRECTS: JSON.stringify([
-        { source: '/redirect/methods', destination: '/methods' },
-        { source: '/redirect/dynamic/[slug]', destination: '/dynamic/[slug]' },
-        { source: '/redirect/dynamic/[other]/[slug]', destination: '/dynamic/[slug]/[other]' },
-        {
-          source: '/redirect/dynamic/[slug]/to/[catchAll]',
-          destination: '/dynamic/[...catchAll]',
-        },
-        { source: '/redirect/dynamic/[slug]/[query]/[params]', destination: '/dynamic/[slug]' },
-        { source: '/redirect/catch-all/[...catchAll]', destination: '/dynamic/[...catchAll]' },
-        { source: '/redirect/catch-all-to-slug/[...slug]', destination: '/dynamic/[slug]' },
-        { source: '/redirect/only-post/[slug]', destination: '/methods', methods: ['POST'] },
-      ]),
     },
   },
 };
@@ -134,7 +118,7 @@ function getAvailableScenarios() {
 
 // Get configuration for a scenario
 function getScenarioConfig(scenario) {
-  // Start with default configuration
+  // Start with a default configuration
   const config = {
     env: {
       E2E_ROUTER_SRC: scenario,
@@ -142,7 +126,7 @@ function getScenarioConfig(scenario) {
     options: [],
   };
 
-  // Merge with known configuration if it exists
+  // Merge with known configuration, if it exists
   if (knownConfigs[scenario]) {
     const known = knownConfigs[scenario];
     config.env = { ...config.env, ...known.env };
@@ -197,7 +181,7 @@ if (config.options) {
   commandOptions.push(...config.options);
 }
 
-// Add any extra arguments passed from command line
+// Add any extra arguments passed from the CLI
 commandOptions.push(...extraArgs);
 
 // Build environment variables
@@ -206,7 +190,6 @@ const env = {
   ...config.env,
 };
 
-// Log what we're doing
 console.log(`Starting scenario: ${scenario}`);
 console.log(`Command: node ${EXPO_CLI_BIN} ${commandOptions.join(' ')}`);
 if (Object.keys(config.env).length > 0) {
@@ -215,10 +198,11 @@ if (Object.keys(config.env).length > 0) {
     console.log(`  ${key}=${value}`);
   });
 }
-console.log('');
+console.log('\n');
 
 // Spawn the process
-const child = spawn('yarn', ['expo', ...commandOptions], {
+// const child = spawn('yarn', ['expo', ...commandOptions], {
+const child = spawn(EXPO_CLI_BIN, [...commandOptions], {
   env,
   stdio: 'inherit',
   cwd: path.join(__dirname, '..'),
